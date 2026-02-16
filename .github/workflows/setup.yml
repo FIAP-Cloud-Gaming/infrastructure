@@ -16,11 +16,11 @@ env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-  TF_WORKING_DIR: infrastructure/setup
+  TF_WORKING_DIR: setup
 
 jobs:
   setup:
-    name: "create state storage"
+    name: create state storage
     runs-on: ubuntu-latest
     defaults:
       run:
