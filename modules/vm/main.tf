@@ -16,6 +16,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   location            = var.location
   resource_group_name = var.resource_group_name
   size                = var.vm_size
+  zone                = var.vm_zone
 
   admin_username = var.admin_username
 

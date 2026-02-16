@@ -1,4 +1,5 @@
 subscription_id = "SUA_SUBSCRIPTION_ID_AQUI"
 project_name    = "fcg"
 location        = "brazilsouth"
-vm_size         = "Standard_B4ms"
+vm_size         = "Standard_B4s"
+vm_zone         = "1"

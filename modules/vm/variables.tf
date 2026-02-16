@@ -29,6 +29,12 @@ variable "vm_size" {
   default     = "Standard_B4ms"
 }
 
+variable "vm_zone" {
+  description = "zona da vm"
+  type        = string
+  default     = "1"
+}
+
 variable "admin_username" {
   description = "usuario ssh da vm"
   type        = string

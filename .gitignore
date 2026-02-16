@@ -7,7 +7,8 @@
 
 # Secrets
 *.tfvars
-!terraform.tfvars.example
+!*.tfvars.example
+!dev.tfvars
 
 # OS
 .DS_Store

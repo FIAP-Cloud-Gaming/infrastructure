@@ -13,4 +13,5 @@ module "vm" {
   subnet_id           = module.networking.subnet_id
   public_ip_id        = module.networking.public_ip_id
   vm_size             = var.vm_size
+  vm_zone             = var.vm_zone
 }

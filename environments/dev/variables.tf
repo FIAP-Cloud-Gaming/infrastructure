@@ -20,3 +20,9 @@ variable "vm_size" {
   type        = string
   default     = "Standard_B4ms"
 }
+
+variable "vm_zone" {
+  description = "zona da vm"
+  type        = string
+  default     = "1"
+}
