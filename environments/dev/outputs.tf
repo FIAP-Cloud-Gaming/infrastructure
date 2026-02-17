@@ -32,3 +32,9 @@ output "kibana_url" {
   description = "URL do Kibana"
   value       = "http://${module.networking.public_ip_address}:5601"
 }
+
+output "ssh_private_key" {
+  description = "Chave privada SSH (usar para conectar na VM)"
+  value       = module.vm.ssh_private_key
+  sensitive   = true
+}

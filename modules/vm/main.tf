@@ -1,3 +1,9 @@
+# Gera par de chaves SSH automaticamente
+resource "tls_private_key" "ssh" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
 resource "azurerm_network_interface" "main" {
   name                = "${var.project_name}-nic"
   location            = var.location
@@ -26,8 +32,7 @@ resource "azurerm_linux_virtual_machine" "main" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file("~/.ssh/id_rsa.pub")
-    # Se nao tiver chave SSH, gerar com: ssh-keygen -t rsa -b 4096
+    public_key = tls_private_key.ssh.public_key_openssh
   }
 
   os_disk {
