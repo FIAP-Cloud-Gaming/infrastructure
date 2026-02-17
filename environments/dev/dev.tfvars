@@ -1,4 +1,4 @@
 project_name = "fcg"
-location     = "brazilsouth"
+location     = "centralus"
 vm_size      = "Standard_B4ms"
 vm_zone      = "1"
