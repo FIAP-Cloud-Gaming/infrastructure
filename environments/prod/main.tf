@@ -184,9 +184,9 @@ resource "azurerm_container_app" "elasticsearch" {
   }
 
   ingress {
-    external_enabled = var.resource_ports[5].external_enabled
-    target_port      = var.resource_ports[5].port
-    transport        = var.resource_ports[5].transport
+    external_enabled = var.resource_ingress_config["elasticsearch"].external_enabled
+    target_port      = var.resource_ingress_config["elasticsearch"].port
+    transport        = var.resource_ingress_config["elasticsearch"].transport
 
     traffic_weight {
       percentage      = 100
