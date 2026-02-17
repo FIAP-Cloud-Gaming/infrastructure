@@ -111,9 +111,9 @@ resource "azurerm_container_app" "mongo" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 27017
-    transport        = "tcp"
+    external_enabled = var.resource_ingress_config["mongo"].external_enabled
+    target_port      = var.resource_ingress_config["mongo"].port
+    transport        = var.resource_ingress_config["mongo"].transport
 
     traffic_weight {
       percentage      = 100
@@ -141,9 +141,9 @@ resource "azurerm_container_app" "redis" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 6379
-    transport        = "tcp"
+    external_enabled = var.resource_ingress_config["redis"].external_enabled
+    target_port      = var.resource_ingress_config["redis"].port
+    transport        = var.resource_ingress_config["redis"].transport
 
     traffic_weight {
       percentage      = 100
@@ -184,9 +184,9 @@ resource "azurerm_container_app" "elasticsearch" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 9200
-    transport        = "http"
+    external_enabled = var.resource_ports[5].external_enabled
+    target_port      = var.resource_ports[5].port
+    transport        = var.resource_ports[5].transport
 
     traffic_weight {
       percentage      = 100
@@ -223,9 +223,10 @@ resource "azurerm_container_app" "rabbitmq" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 15672
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["rabbitmq"].external_enabled
+    target_port      = var.resource_ingress_config["rabbitmq"].port
+    transport        = var.resource_ingress_config["rabbitmq"].transport
+    exposed_port     = var.resource_ingress_config["rabbitmq"].port
 
     traffic_weight {
       percentage      = 100
@@ -257,9 +258,9 @@ resource "azurerm_container_app" "jaeger" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 16686
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["jaeger"].external_enabled
+    target_port      = var.resource_ingress_config["jaeger"].port
+    transport        = var.resource_ingress_config["jaeger"].transport
 
     traffic_weight {
       percentage      = 100
@@ -287,9 +288,9 @@ resource "azurerm_container_app" "loki" {
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 3100
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["loki"].external_enabled
+    target_port      = var.resource_ingress_config["loki"].port
+    transport        = var.resource_ingress_config["loki"].transport
 
     traffic_weight {
       percentage      = 100
@@ -335,19 +336,19 @@ resource "azurerm_container_app" "grafana" {
       }
       env {
         name  = "LOKI_URL"
-        value = "http://loki:3100"
+        value = "http://loki:${var.resource_ingress_config["loki"].port}"
       }
       env {
         name  = "JAEGER_URL"
-        value = "http://jaeger:16686"
+        value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
     }
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 3000
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["grafana"].external_enabled
+    target_port      = var.resource_ingress_config["grafana"].port
+    transport        = var.resource_ingress_config["grafana"].transport
 
     traffic_weight {
       percentage      = 100
@@ -397,7 +398,7 @@ resource "azurerm_container_app" "identity_api" {
       }
       env {
         name  = "ConnectionStrings__RabbitMQ"
-        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:5672"
+        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:${var.resource_ingress_config["rabbitmq"].port}"
       }
       env {
         name  = "JwtSettings__Secret"
@@ -417,19 +418,19 @@ resource "azurerm_container_app" "identity_api" {
       }
       env {
         name  = "Loki__Uri"
-        value = "http://loki:3100"
+        value = "http://loki:${var.resource_ingress_config["loki"].port}"
       }
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-        value = "http://jaeger:4317"
+        value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
     }
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 8080
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["identity_api"].external_enabled
+    target_port      = var.resource_ingress_config["identity_api"].port
+    transport        = var.resource_ingress_config["identity_api"].transport
 
     traffic_weight {
       percentage      = 100
@@ -475,15 +476,15 @@ resource "azurerm_container_app" "catalog_api" {
       }
       env {
         name  = "ConnectionStrings__MongoDB"
-        value = "mongodb://mongo:27017"
+        value = "mongodb://mongo:${var.resource_ingress_config["mongo"].port}"
       }
       env {
         name  = "ConnectionStrings__Redis"
-        value = "redis:6379"
+        value = "redis:${var.resource_ingress_config["redis"].port}"
       }
       env {
         name  = "ConnectionStrings__Elasticsearch"
-        value = "http://elasticsearch:9200"
+        value = "http://elasticsearch:${var.resource_ingress_config["elasticsearch"].port}"
       }
       env {
         name  = "MongoDB__DatabaseName"
@@ -491,7 +492,7 @@ resource "azurerm_container_app" "catalog_api" {
       }
       env {
         name  = "Elasticsearch__Uri"
-        value = "http://elasticsearch:9200"
+        value = "http://elasticsearch:${var.resource_ingress_config["elasticsearch"].port}"
       }
       env {
         name  = "JwtSettings__Secret"
@@ -507,23 +508,23 @@ resource "azurerm_container_app" "catalog_api" {
       }
       env {
         name  = "ConnectionStrings__RabbitMQ"
-        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:5672"
+        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:${var.resource_ingress_config["rabbitmq"].port}"
       }
       env {
         name  = "Loki__Uri"
-        value = "http://loki:3100"
+        value = "http://loki:${var.resource_ingress_config["loki"].port}"
       }
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-        value = "http://jaeger:4317"
+        value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
     }
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 8080
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["gateway_api"].external_enabled
+    target_port      = var.resource_ingress_config["gateway_api"].port
+    transport        = var.resource_ingress_config["gateway_api"].transport
 
     traffic_weight {
       percentage      = 100
@@ -569,7 +570,7 @@ resource "azurerm_container_app" "payment_api" {
       }
       env {
         name  = "Elasticsearch__Uri"
-        value = "http://elasticsearch:9200"
+        value = "http://elasticsearch:${var.resource_ingress_config["elasticsearch"].port}"
       }
       env {
         name  = "JwtSettings__Secret"
@@ -585,23 +586,23 @@ resource "azurerm_container_app" "payment_api" {
       }
       env {
         name  = "ConnectionStrings__RabbitMQ"
-        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:5672"
+        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:${var.resource_ingress_config["rabbitmq"].port}"
       }
       env {
         name  = "Loki__Uri"
-        value = "http://loki:3100"
+        value = "http://loki:${var.resource_ingress_config["loki"].port}"
       }
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-        value = "http://jaeger:4317"
+        value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
     }
   }
 
   ingress {
-    external_enabled = false
-    target_port      = 8080
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["payment_api"].external_enabled
+    target_port      = var.resource_ingress_config["payment_api"].port
+    transport        = var.resource_ingress_config["payment_api"].transport
 
     traffic_weight {
       percentage      = 100
@@ -667,19 +668,19 @@ resource "azurerm_container_app" "gateway_api" {
       }
       env {
         name  = "Loki__Uri"
-        value = "http://loki:3100"
+        value = "http://loki:${var.resource_ingress_config["loki"].port}"
       }
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-        value = "http://jaeger:4317"
+        value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
     }
   }
 
   ingress {
-    external_enabled = true
-    target_port      = 8080
-    transport        = "http"
+    external_enabled = var.resource_ingress_config["gateway_api"].external_enabled
+    target_port      = var.resource_ingress_config["gateway_api"].port
+    transport        = var.resource_ingress_config["gateway_api"].transport
 
     traffic_weight {
       percentage      = 100
@@ -725,7 +726,7 @@ resource "azurerm_container_app" "functions" {
       }
       env {
         name  = "RabbitMQ"
-        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:5672"
+        value = "amqp://admin:${var.rabbitmq_password}@rabbitmq:${var.resource_ingress_config["rabbitmq"].port}"
       }
     }
   }
