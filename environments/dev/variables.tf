@@ -15,14 +15,29 @@ variable "location" {
   default     = "brazilsouth"
 }
 
-variable "vm_size" {
-  description = "tamanho da vm"
+variable "environment" {
+  description = "nome do ambiente"
   type        = string
-  default     = "Standard_B4ms"
+  default     = "dev"
 }
 
-variable "vm_zone" {
-  description = "zona da vm"
+variable "ghcr_username" {
+  description = "username para autenticacao no GitHub Container Registry"
   type        = string
-  default     = "1"
+}
+
+variable "ghcr_token" {
+  description = "PAT token para autenticacao no GitHub Container Registry"
+  type        = string
+  sensitive   = true
+}
+
+
+variable "tags" {
+  description = "tags para os recursos"
+  type        = map(string)
+  default = {
+    Project   = "FIAP Cloud Gaming"
+    ManagedBy = "Alessandro.DEV"
+  }
 }

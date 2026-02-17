@@ -1,40 +1,53 @@
-output "public_ip" {
-  description = "IP publico da VM"
-  value       = module.networking.public_ip_address
-}
-
-output "ssh_command" {
-  description = "Comando para conectar via SSH"
-  value       = "ssh ${module.vm.admin_username}@${module.networking.public_ip_address}"
-}
-
 output "gateway_url" {
-  description = "URL do Gateway API"
-  value       = "http://${module.networking.public_ip_address}:5000"
+  description = "URL do Gateway API (entry point)"
+  value       = "https://${azurerm_container_app.gateway_api.ingress[0].fqdn}"
 }
 
 output "rabbitmq_url" {
   description = "URL do RabbitMQ Management"
-  value       = "http://${module.networking.public_ip_address}:15672"
+  value       = "https://${azurerm_container_app.rabbitmq.ingress[0].fqdn}"
 }
 
 output "grafana_url" {
   description = "URL do Grafana"
-  value       = "http://${module.networking.public_ip_address}:3000"
+  value       = "https://${azurerm_container_app.grafana.ingress[0].fqdn}"
 }
 
 output "jaeger_url" {
-  description = "URL do Jaeger"
-  value       = "http://${module.networking.public_ip_address}:16686"
+  description = "URL do Jaeger (tracing)"
+  value       = "https://${azurerm_container_app.jaeger.ingress[0].fqdn}"
 }
 
-output "kibana_url" {
-  description = "URL do Kibana"
-  value       = "http://${module.networking.public_ip_address}:5601"
+output "elasticsearch_url" {
+  description = "URL do Elasticsearch (interno)"
+  value       = "https://${azurerm_container_app.elasticsearch.ingress[0].fqdn}"
 }
 
-output "ssh_private_key" {
-  description = "Chave privada SSH (usar para conectar na VM)"
-  value       = module.vm.ssh_private_key
-  sensitive   = true
+output "environment_domain" {
+  description = "Dominio padrao do Container Apps Environment"
+  value       = module.container_apps.default_domain
+}
+
+output "demo_urls" {
+  description = "Resumo de todos os links para apresentacao"
+  value = <<-EOT
+
+    ============================================
+    FIAP Cloud Gaming - Dev Environment
+    ============================================
+
+    APIs (via Gateway):
+      Swagger/Health:  https://${azurerm_container_app.gateway_api.ingress[0].fqdn}/health
+      Auth:            https://${azurerm_container_app.gateway_api.ingress[0].fqdn}/api/auth
+      Catalog:         https://${azurerm_container_app.gateway_api.ingress[0].fqdn}/api/catalog
+      Payment:         https://${azurerm_container_app.gateway_api.ingress[0].fqdn}/api/payment
+
+    Observabilidade:
+      Grafana:         https://${azurerm_container_app.grafana.ingress[0].fqdn}
+      Jaeger:          https://${azurerm_container_app.jaeger.ingress[0].fqdn}
+
+    Infraestrutura:
+      RabbitMQ:        https://${azurerm_container_app.rabbitmq.ingress[0].fqdn}
+
+  EOT
 }

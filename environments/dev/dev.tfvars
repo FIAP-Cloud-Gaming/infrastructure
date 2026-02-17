@@ -1,4 +1,3 @@
-project_name = "fcg"
-location     = "brazilsouth"
-vm_size      = "Standard_D4s_v3"
-vm_zone      = "1"
+project_name  = "fcg"
+location      = "brazilsouth"
+ghcr_username = "fiap-cloud-gaming"

@@ -1,5 +1,3 @@
-subscription_id = "SUA_SUBSCRIPTION_ID_AQUI"
-project_name    = "fcg"
-location        = "brazilsouth"
-vm_size         = "Standard_B4s"
-vm_zone         = "1"
+project_name  = "fcg"
+location      = "brazilsouth"
+ghcr_username = "fiap-cloud-gaming"

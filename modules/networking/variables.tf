@@ -1,32 +1,31 @@
 variable "project_name" {
-  description = "prefixo para os recursos do projeto"
+  description = "prefixo para os recursos"
   type        = string
-  default     = "fcg"
+}
+
+variable "resource_group_name" {
+  description = "nome do resource group"
+  type        = string
 }
 
 variable "location" {
-  description = "regiao Azure"
+  description = "regiao azure"
   type        = string
-  default     = "brazilsouth"
+}
+
+variable "environment" {
+  description = "nome do ambiente (dev, prod)"
+  type        = string
 }
 
 variable "open_ports" {
-  description = "portas do firewall"
-  type        = list(object({
-    name     = string
-    port     = number
-    priority = number
-  }))
-  default = [
-    { name = "ssh",           port = 22,    priority = 100 },
-    { name = "gateway",       port = 5000,  priority = 200 },
-    { name = "identity",      port = 5001,  priority = 201 },
-    { name = "catalog",       port = 5002,  priority = 202 },
-    { name = "payment",       port = 5003,  priority = 203 },
-    { name = "rabbitmq-ui",   port = 15672, priority = 300 },
-    { name = "elasticsearch", port = 9200,  priority = 301 },
-    { name = "kibana",        port = 5601,  priority = 302 },
-    { name = "jaeger",        port = 16686, priority = 303 },
-    { name = "grafana",       port = 3000,  priority = 304 },
-  ]
+  description = "portas liberadas no NSG (inbound)"
+  type        = list(number)
+  default     = [443, 80]
+}
+
+variable "tags" {
+  description = "tags para os recursos"
+  type    = map(string)
+  default = {}
 }

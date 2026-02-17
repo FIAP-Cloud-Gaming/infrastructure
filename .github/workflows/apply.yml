@@ -3,6 +3,14 @@ name: apply
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
       action:
         description: "Terraform action"
         required: true
@@ -16,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: terraform-apply
+  group: terraform-apply-${{ github.event.inputs.environment }}
   cancel-in-progress: false
 
 env:
@@ -24,11 +32,11 @@ env:
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-  TF_WORKING_DIR: environments/dev
+  TF_WORKING_DIR: environments/${{ github.event.inputs.environment }}
 
 jobs:
   apply:
-    name: terraform apply
+    name: terraform ${{ github.event.inputs.action }} (${{ github.event.inputs.environment }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,10 +49,40 @@ jobs:
       - name: terraform init
         run: terraform init
 
-      - name: terraform apply
-        if: github.event.inputs.action != 'destroy'
-        run: terraform apply -auto-approve -input=false -var-file="dev.tfvars" -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}"
+      - name: terraform apply (dev)
+        if: github.event.inputs.action != 'destroy' && github.event.inputs.environment == 'dev'
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var-file="dev.tfvars" \
+            -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}" \
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}"
 
-      - name: terraform destroy
-        if: github.event.inputs.action == 'destroy'
-        run: terraform destroy -auto-approve -input=false -var-file="dev.tfvars" -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}"
+      - name: terraform apply (prod)
+        if: github.event.inputs.action != 'destroy' && github.event.inputs.environment == 'prod'
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var-file="prod.tfvars" \
+            -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}" \
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}" \
+            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="rabbitmq_password=${{ secrets.RABBITMQ_PASSWORD }}"
+
+      - name: terraform destroy (dev)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.environment == 'dev'
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var-file="dev.tfvars" \
+            -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}" \
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}"
+
+      - name: terraform destroy (prod)
+        if: github.event.inputs.action == 'destroy' && github.event.inputs.environment == 'prod'
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var-file="prod.tfvars" \
+            -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}" \
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}" \
+            -var="postgres_password=${{ secrets.POSTGRES_PASSWORD }}" \
+            -var="jwt_secret=${{ secrets.JWT_SECRET }}" \
+            -var="rabbitmq_password=${{ secrets.RABBITMQ_PASSWORD }}"
