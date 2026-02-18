@@ -164,7 +164,7 @@ resource "azurerm_container_app" "elasticsearch" {
 
     container {
       name   = "elasticsearch"
-      image  = "docker.elastic.co/elasticsearch/elasticsearch:8.17.0"
+      image  = "docker.elastic.co/elasticsearch/elasticsearch:9.0.2"
       cpu    = 1
       memory = "2Gi"
 
@@ -518,6 +518,14 @@ resource "azurerm_container_app" "catalog_api" {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
         value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
       }
+      env {
+        name  = "Elasticsearch__Username"
+        value = ""
+      }
+      env {
+        name  = "Elasticsearch__Password"
+        value = ""
+      }
     }
   }
 
@@ -595,6 +603,14 @@ resource "azurerm_container_app" "payment_api" {
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
         value = "http://jaeger:${var.resource_ingress_config["jaeger"].port}"
+      }
+      env {
+        name  = "Elasticsearch__Username"
+        value = ""
+      }
+      env {
+        name  = "Elasticsearch__Password"
+        value = ""
       }
     }
   }
@@ -689,6 +705,36 @@ resource "azurerm_container_app" "gateway_api" {
   }
 }
 
+resource "azurerm_container_app" "azurite" {
+  name                         = "azurite"
+  container_app_environment_id = local.environment_id
+  resource_group_name          = local.resource_group
+  revision_mode                = "Single"
+
+  template {
+    min_replicas = 1
+    max_replicas = 1
+
+    container {
+      name   = "azurite"
+      image  = "mcr.microsoft.com/azure-storage/azurite:latest"
+      cpu    = 0.25
+      memory = "0.5Gi"
+    }
+  }
+
+  ingress {
+    external_enabled = var.resource_ingress_config["azurite"].external_enabled
+    target_port      = var.resource_ingress_config["azurite"].port
+    transport        = var.resource_ingress_config["azurite"].transport
+
+    traffic_weight {
+      percentage      = 100
+      latest_revision = true
+    }
+  }
+}
+
 resource "azurerm_container_app" "functions" {
   name                         = "functions"
   container_app_environment_id = local.environment_id
@@ -718,7 +764,7 @@ resource "azurerm_container_app" "functions" {
 
       env {
         name  = "AzureWebJobsStorage"
-        value = "UseDevelopmentStorage=true"
+        value = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
       }
       env {
         name  = "FUNCTIONS_WORKER_RUNTIME"
