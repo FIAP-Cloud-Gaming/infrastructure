@@ -1,212 +1,108 @@
 # FIAP Cloud Gaming - Infrastructure
 
-Infraestrutura como codigo (IaC) do projeto FIAP Cloud Gaming, utilizando **Terraform** para provisionar recursos no **Microsoft Azure**.
+Infraestrutura como codigo (IaC) para o projeto FIAP Cloud Gaming.
 
 ## Arquitetura
 
-A plataforma roda inteiramente em **Azure Container Apps**, com cada microservico em seu proprio container. Os ambientes (dev e prod) compartilham os mesmos modulos Terraform, diferenciando-se apenas pela configuracao.
+O projeto suporta dois modos de deploy para a Fase 3:
 
-```
-                        ┌─────────────────────────────────────────────┐
-                        │         Azure Container Apps Environment     │
-                        │                                              │
-  Internet ──────────►  │  ┌──────────┐     ┌──────────────────────┐  │
-                        │  │ Gateway  │────►│ Identity API          │  │
-                        │  │  (YARP)  │────►│ Catalog API           │  │
-                        │  │          │────►│ Payment API           │  │
-                        │  └──────────┘     └──────────────────────┘  │
-                        │                                              │
-                        │  ┌──────────────────────────────────────┐   │
-                        │  │ Infra: PostgreSQL x3 │ MongoDB │ Redis│   │
-                        │  │        Elasticsearch │ RabbitMQ       │   │
-                        │  └──────────────────────────────────────┘   │
-                        │                                              │
-                        │  ┌──────────────────────────────────────┐   │
-                        │  │ Observabilidade: Grafana │ Loki │Jaeger│  │
-                        │  └──────────────────────────────────────┘   │
-                        │                                              │
-                        │  ┌──────────────────────────────────────┐   │
-                        │  │ Functions (Azure Functions runtime)   │   │
-                        │  └──────────────────────────────────────┘   │
-                        └─────────────────────────────────────────────┘
-```
+- **ACA (Azure Container Apps)**: servicos gerenciados, sem necessidade de administrar VMs
+- **VM (Virtual Machine)**: VM Ubuntu com Docker Compose, todos os servicos em uma unica maquina
 
-### Diferencas entre ambientes
+## Estrutura do Repositorio
 
-| Recurso | Dev | Prod |
-|---------|-----|------|
-| PostgreSQL | Container Apps (containerizado) | Azure PostgreSQL Flexible Server (managed) |
-| Rede | Rede gerenciada pelo Container Apps | VNet com subnets dedicadas + Private DNS |
-| Replicas | `min_replicas = 1` | `min_replicas = 0` (scale-to-zero) |
-| Secrets | Hardcoded no tfvars | Via GitHub Secrets (variáveis sensíveis) |
-| Grafana/Jaeger | Externo (acesso publico) | Interno (acesso via VNet) |
+```text
+.github/workflows/
+  setup.yml              # Bootstrap: state storage + imagem Grafana
+  deploy.yml             # Deploy: terraform apply/destroy (target: aca | vm)
 
-## Estrutura do projeto
+terraform/
+  setup/                 # Storage Account para Terraform remote state
+  modules/
+    resource-group/      # Modulo: Azure Resource Group
+    aca/                 # Modulo: Container Apps Environment + Log Analytics
+  aca/                   # Deploy via Azure Container Apps
+    modules/
+      infra/             # PostgreSQL, MongoDB, Redis, Elasticsearch, RabbitMQ, Azurite
+      apps/              # Identity, Catalog, Payment, Gateway, Functions
+      observability/     # Jaeger, Loki, Grafana
+  vm/                    # Deploy via VM + Docker Compose
 
-```
-Infra/
-├── .github/workflows/
-│   ├── plan.yml          # Terraform plan em PRs (matrix: dev + prod)
-│   ├── apply.yml         # Terraform apply/destroy manual (workflow_dispatch)
-│   ├── grafana.yml       # Build e push da imagem custom do Grafana
-│   └── setup.yml         # Bootstrap do remote state (Storage Account)
-│
-├── environments/
-│   ├── dev/              # Ambiente de desenvolvimento
-│   │   ├── main.tf       # Todos os Container Apps (infra + APIs)
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   ├── providers.tf  # Backend remoto (Azure Blob)
-│   │   └── dev.tfvars
-│   └── prod/             # Ambiente de producao
-│       ├── main.tf       # PostgreSQL Flexible Server + Container Apps
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── providers.tf
-│       └── prod.tfvars
-│
-├── modules/
-│   ├── container-apps/   # Container Apps Environment + Log Analytics
-│   ├── networking/       # VNet, subnets, NSG, Private DNS Zone
-│   └── resource-group/   # Resource Group
-│
-├── grafana/              # Custom Grafana Docker image
-│   ├── Dockerfile
-│   └── provisioning/
-│       ├── datasources/
-│       │   └── datasources.yml    # Loki + Jaeger (env vars)
-│       └── dashboards/
-│           ├── dashboards.yml
-│           ├── identity-api-dashboard.json
-│           ├── catalog-api-dashboard.json
-│           └── payment-api-dashboard.json
-│
-└── setup/                # Bootstrap: cria Storage Account para tfstate
-    ├── main.tf
-    ├── variables.tf
-    └── outputs.tf
+grafana/                 # Imagem custom Grafana (dashboards + datasources)
 ```
 
 ## Pre-requisitos
 
-- [Terraform](https://www.terraform.io/downloads) >= 1.14.0
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- Subscription Azure com permissoes de Contributor
-- GitHub PAT com permissao `read:packages` (para pull de imagens do GHCR)
+- [Terraform](https://www.terraform.io/) >= 1.14
+- [Azure CLI](https://docs.microsoft.com/cli/azure/)
+- Conta Azure com Service Principal configurado
+- GitHub Secrets configurados no repositorio
 
-## Setup inicial
-
-### 1. Bootstrap do remote state
-
-Na primeira vez, execute o setup para criar o Storage Account que armazena o estado do Terraform:
-
-```bash
-cd setup
-terraform init
-terraform apply -var="subscription_id=SUA_SUBSCRIPTION_ID"
-```
-
-### 2. Configurar secrets no GitHub
-
-O repositorio precisa dos seguintes secrets para os workflows:
+## GitHub Secrets
 
 | Secret | Descricao |
 |--------|-----------|
-| `ARM_CLIENT_ID` | Service Principal client ID |
-| `ARM_CLIENT_SECRET` | Service Principal client secret |
+| `ARM_CLIENT_ID` | Client ID do Service Principal |
+| `ARM_CLIENT_SECRET` | Client Secret do Service Principal |
 | `ARM_SUBSCRIPTION_ID` | Azure Subscription ID |
 | `ARM_TENANT_ID` | Azure Tenant ID |
-| `GHCR_TOKEN` | GitHub PAT para pull de imagens |
-| `POSTGRES_PASSWORD` | Senha do PostgreSQL (prod) |
-| `JWT_SECRET` | Secret para assinatura JWT (prod) |
-| `RABBITMQ_PASSWORD` | Senha do RabbitMQ (prod) |
+| `GHCR_TOKEN` | PAT para autenticacao no GitHub Container Registry |
 
-### 3. Build da imagem custom do Grafana
+## Como Usar
 
-A imagem custom precisa existir no GHCR antes do `terraform apply`. Na primeira vez, faça o push manual:
+### 1. Setup inicial (uma vez)
 
-```bash
-cd grafana
-docker build -t ghcr.io/fiap-cloud-gaming/grafana-custom:latest .
-docker login ghcr.io
-docker push ghcr.io/fiap-cloud-gaming/grafana-custom:latest
-```
+Rodar o workflow **setup** no GitHub Actions:
 
-Apos o primeiro push, atualizacoes sao automaticas via workflow `grafana.yml`.
+- Cria o Storage Account para Terraform remote state
+- Publica a imagem custom do Grafana no GHCR
 
-## Uso
+### 2. Deploy
 
-### Terraform plan (automatico em PRs)
+Rodar o workflow **deploy** no GitHub Actions:
 
-Ao abrir um PR que altere `environments/**` ou `modules/**`, o workflow `plan.yml` roda automaticamente `terraform plan` para **dev** e **prod**, postando o resultado como comentario no PR.
+- **target**: `aca` (Container Apps) ou `vm` (Virtual Machine)
+- **action**: `apply` (criar) ou `destroy` (remover)
 
-### Terraform apply (manual)
-
-Via GitHub Actions:
-
-1. Vá em **Actions** > **apply**
-2. Clique em **Run workflow**
-3. Selecione o ambiente (`dev` ou `prod`) e a acao (`apply` ou `destroy`)
-
-Via CLI local:
+### Via CLI (local)
 
 ```bash
-# Dev
-cd environments/dev
+# Container Apps
+cd terraform/aca
 terraform init
 terraform apply -var-file="dev.tfvars" \
-  -var="subscription_id=..." \
-  -var="ghcr_token=..."
+  -var="subscription_id=<SUB_ID>" \
+  -var="ghcr_token=<PAT>"
 
-# Prod
-cd environments/prod
+# VM
+cd terraform/vm
 terraform init
-terraform apply -var-file="prod.tfvars" \
-  -var="subscription_id=..." \
-  -var="ghcr_token=..." \
-  -var="postgres_password=..." \
-  -var="jwt_secret=..." \
-  -var="rabbitmq_password=..."
+terraform apply -var-file="dev.tfvars" \
+  -var="subscription_id=<SUB_ID>" \
+  -var="ghcr_token=<PAT>"
 ```
 
-### Outputs
+## Servicos
 
-Apos o apply, o Terraform exibe as URLs de todos os servicos:
+| Servico | Imagem | Descricao |
+|---------|--------|-----------|
+| Gateway API | `ghcr.io/fiap-cloud-gaming/gateway-api` | API Gateway (YARP reverse proxy) |
+| Identity API | `ghcr.io/fiap-cloud-gaming/identity-api` | Autenticacao e autorizacao (JWT) |
+| Catalog API | `ghcr.io/fiap-cloud-gaming/catalog-api` | Catalogo de jogos |
+| Payment API | `ghcr.io/fiap-cloud-gaming/payment-api` | Processamento de pagamentos |
+| Functions | `ghcr.io/fiap-cloud-gaming/functions` | Azure Functions (serverless) |
+| Grafana | `ghcr.io/fiap-cloud-gaming/grafana-custom` | Dashboards de monitoramento |
 
-```
-gateway_url      = "https://gateway-api.<domain>.brazilsouth.azurecontainerapps.io"
-grafana_url      = "https://grafana.<domain>.brazilsouth.azurecontainerapps.io"
-jaeger_url       = "https://jaeger.<domain>.brazilsouth.azurecontainerapps.io"
-rabbitmq_url     = "https://rabbitmq.<domain>.brazilsouth.azurecontainerapps.io"
-```
+## Infraestrutura
 
-## Container Apps provisionados
-
-| Container App | Imagem | CPU | Memoria | Porta |
-|---------------|--------|-----|---------|-------|
-| **gateway-api** | `ghcr.io/fiap-cloud-gaming/gateway-api` | 0.5 | 1Gi | 8080 |
-| **identity-api** | `ghcr.io/fiap-cloud-gaming/identity-api` | 0.5 | 1Gi | 8080 |
-| **catalog-api** | `ghcr.io/fiap-cloud-gaming/catalog-api` | 0.5 | 1Gi | 8080 |
-| **payment-api** | `ghcr.io/fiap-cloud-gaming/payment-api` | 0.5 | 1Gi | 8080 |
-| **functions** | `ghcr.io/fiap-cloud-gaming/functions` | 0.25 | 0.5Gi | - |
-| **postgres-identity** | `postgres:18.1-alpine` | 0.5 | 1Gi | 5432 |
-| **postgres-catalog** | `postgres:18.1-alpine` | 0.5 | 1Gi | 5432 |
-| **postgres-payment** | `postgres:18.1-alpine` | 0.5 | 1Gi | 5432 |
-| **mongo** | `mongo:latest` | 0.5 | 1Gi | 27017 |
-| **redis** | `redis:latest` | 0.25 | 0.5Gi | 6379 |
-| **elasticsearch** | `elasticsearch:8.17.0` | 1.0 | 2Gi | 9200 |
-| **rabbitmq** | `rabbitmq:4.1-management-alpine` | 0.5 | 1Gi | 15672 |
-| **grafana** | `ghcr.io/.../grafana-custom` | 0.25 | 0.5Gi | 3000 |
-| **loki** | `grafana/loki:latest` | 0.25 | 0.5Gi | 3100 |
-| **jaeger** | `jaegertracing/jaeger:latest` | 0.5 | 1Gi | 16686 |
-
-> **Nota:** No ambiente **prod**, os 3 PostgreSQL containerizados sao substituidos por um unico **Azure PostgreSQL Flexible Server** com 3 databases, integrado via Private DNS Zone.
-
-## Grafana custom image
-
-O Grafana no Container Apps nao suporta volume mounts. Para contornar isso, utilizamos uma imagem Docker customizada que embute os arquivos de provisioning:
-
-- **Datasources**: Loki e Jaeger, configurados via variaveis de ambiente (`$LOKI_URL`, `$JAEGER_URL`)
-- **Dashboards**: Identity API, Catalog API e Payment API pre-configurados
-
-A imagem e construida e publicada automaticamente no GHCR pelo workflow `grafana.yml` quando arquivos em `grafana/` sao alterados no branch `main`.
+| Componente | Imagem | Funcao |
+|------------|--------|--------|
+| PostgreSQL | `postgres:18.1-alpine` | Banco relacional (Identity, Catalog, Payment) |
+| MongoDB | `mongo:latest` | Banco de documentos (Catalog) |
+| Redis | `redis:latest` | Cache (Catalog) |
+| Elasticsearch | `elasticsearch:9.0.2` | Busca e indexacao |
+| RabbitMQ | `rabbitmq:4.1-management-alpine` | Mensageria assincrona |
+| Azurite | `mcr.microsoft.com/azure-storage/azurite` | Emulador Azure Storage (Functions) |
+| Jaeger | `jaegertracing/jaeger:latest` | Tracing distribuido (OpenTelemetry) |
+| Loki | `grafana/loki:latest` | Agregacao de logs |
+| Grafana | Custom | Visualizacao de metricas, logs e traces |

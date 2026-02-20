@@ -1,0 +1,300 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+write_files:
+  - path: /home/${admin_username}/app/docker-compose.yml
+    owner: ${admin_username}:${admin_username}
+    permissions: "0644"
+    content: |
+      services:
+
+        postgres:
+          image: postgres:18.1-alpine
+          container_name: fcg-postgres
+          environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: "${postgres_password}"
+          ports:
+            - "5432:5432"
+          volumes:
+            - postgres-data:/var/lib/postgresql/data
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+          networks:
+            - fcg-network
+
+        mongo:
+          image: mongo:latest
+          container_name: fcg-mongo
+          ports:
+            - "27017:27017"
+          volumes:
+            - mongo-data:/data/db
+          healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+          networks:
+            - fcg-network
+
+        redis:
+          image: redis:latest
+          container_name: fcg-redis
+          ports:
+            - "6379:6379"
+          healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+          networks:
+            - fcg-network
+
+        elasticsearch:
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
+          container_name: fcg-elasticsearch
+          environment:
+            discovery.type: single-node
+            xpack.security.enabled: "false"
+            ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+          ports:
+            - "9200:9200"
+          volumes:
+            - es-data:/usr/share/elasticsearch/data
+          healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+            interval: 15s
+            timeout: 10s
+            retries: 5
+            start_period: 30s
+          networks:
+            - fcg-network
+
+        rabbitmq:
+          image: rabbitmq:4.1-management-alpine
+          container_name: fcg-rabbitmq
+          environment:
+            RABBITMQ_DEFAULT_USER: "${rabbitmq_user}"
+            RABBITMQ_DEFAULT_PASS: "${rabbitmq_password}"
+          ports:
+            - "5672:5672"
+            - "15672:15672"
+          volumes:
+            - rabbitmq-data:/var/lib/rabbitmq
+          healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+            interval: 15s
+            timeout: 10s
+            retries: 5
+            start_period: 30s
+          networks:
+            - fcg-network
+
+        azurite:
+          image: mcr.microsoft.com/azure-storage/azurite:latest
+          container_name: fcg-azurite
+          ports:
+            - "10000:10000"
+            - "10001:10001"
+            - "10002:10002"
+          networks:
+            - fcg-network
+
+        jaeger:
+          image: jaegertracing/jaeger:latest
+          container_name: fcg-jaeger
+          ports:
+            - "4317:4317"
+            - "4318:4318"
+            - "16686:16686"
+          networks:
+            - fcg-network
+
+        loki:
+          image: grafana/loki:latest
+          container_name: fcg-loki
+          ports:
+            - "3100:3100"
+          networks:
+            - fcg-network
+
+        grafana:
+          image: ghcr.io/${ghcr_username}/grafana-custom:latest
+          container_name: fcg-grafana
+          environment:
+            GF_SECURITY_ADMIN_PASSWORD: admin
+            GF_USERS_ALLOW_SIGN_UP: "false"
+            LOKI_URL: http://loki:3100
+            JAEGER_URL: http://jaeger:16686
+          ports:
+            - "3000:3000"
+          depends_on:
+            - loki
+            - jaeger
+          networks:
+            - fcg-network
+
+        identity.api:
+          image: ghcr.io/${ghcr_username}/identity-api:${image_tag}
+          container_name: fcg-identity-api
+          environment:
+            ASPNETCORE_ENVIRONMENT: Production
+            ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=identity_db;Username=postgres;Password=${postgres_password}"
+            ConnectionStrings__RabbitMQ: "amqp://${rabbitmq_user}:${rabbitmq_password}@rabbitmq:5672"
+            JwtSettings__Secret: "${jwt_secret}"
+            JwtSettings__Issuer: fcg-identity-api
+            JwtSettings__Audience: fcg-services
+            JwtSettings__AccessTokenExpirationMinutes: "60"
+            Loki__Uri: http://loki:3100
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+          depends_on:
+            postgres:
+              condition: service_healthy
+            rabbitmq:
+              condition: service_healthy
+          healthcheck:
+            test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+          networks:
+            - fcg-network
+
+        catalog.api:
+          image: ghcr.io/${ghcr_username}/catalog-api:${image_tag}
+          container_name: fcg-catalog-api
+          environment:
+            ASPNETCORE_ENVIRONMENT: Production
+            ConnectionStrings__CatalogDB: "Host=postgres;Port=5432;Database=catalog_db;Username=postgres;Password=${postgres_password}"
+            ConnectionStrings__MongoDB: "mongodb://mongo:27017"
+            ConnectionStrings__Redis: "redis:6379"
+            ConnectionStrings__Elasticsearch: "http://elasticsearch:9200"
+            ConnectionStrings__RabbitMQ: "amqp://${rabbitmq_user}:${rabbitmq_password}@rabbitmq:5672"
+            MongoDB__DatabaseName: CatalogDB
+            Elasticsearch__Uri: "http://elasticsearch:9200"
+            JwtSettings__Secret: "${jwt_secret}"
+            JwtSettings__Issuer: fcg-identity-api
+            JwtSettings__Audience: fcg-services
+            Loki__Uri: http://loki:3100
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+          depends_on:
+            postgres:
+              condition: service_healthy
+            mongo:
+              condition: service_healthy
+            redis:
+              condition: service_healthy
+            elasticsearch:
+              condition: service_healthy
+            rabbitmq:
+              condition: service_healthy
+          healthcheck:
+            test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+          networks:
+            - fcg-network
+
+        payment.api:
+          image: ghcr.io/${ghcr_username}/payment-api:${image_tag}
+          container_name: fcg-payment-api
+          environment:
+            ASPNETCORE_ENVIRONMENT: Production
+            ConnectionStrings__PaymentDB: "Host=postgres;Port=5432;Database=payment_db;Username=postgres;Password=${postgres_password}"
+            ConnectionStrings__RabbitMQ: "amqp://${rabbitmq_user}:${rabbitmq_password}@rabbitmq:5672"
+            Elasticsearch__Uri: "http://elasticsearch:9200"
+            JwtSettings__Secret: "${jwt_secret}"
+            JwtSettings__Issuer: fcg-identity-api
+            JwtSettings__Audience: fcg-services
+            Loki__Uri: http://loki:3100
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+          depends_on:
+            postgres:
+              condition: service_healthy
+            rabbitmq:
+              condition: service_healthy
+          healthcheck:
+            test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+          networks:
+            - fcg-network
+
+        gateway.api:
+          image: ghcr.io/${ghcr_username}/gateway-api:${image_tag}
+          container_name: fcg-gateway-api
+          environment:
+            ASPNETCORE_ENVIRONMENT: Production
+            JwtSettings__Secret: "${jwt_secret}"
+            JwtSettings__Issuer: fcg-identity-api
+            JwtSettings__Audience: fcg-services
+            ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address: "http://identity.api:8080"
+            ReverseProxy__Clusters__catalog-cluster__Destinations__catalog-api__Address: "http://catalog.api:8080"
+            ReverseProxy__Clusters__payment-cluster__Destinations__payment-api__Address: "http://payment.api:8080"
+            Loki__Uri: http://loki:3100
+            OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+          ports:
+            - "80:8080"
+          depends_on:
+            identity.api:
+              condition: service_healthy
+            catalog.api:
+              condition: service_healthy
+            payment.api:
+              condition: service_healthy
+          healthcheck:
+            test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 20s
+          networks:
+            - fcg-network
+
+        functions:
+          image: ghcr.io/${ghcr_username}/functions:${image_tag}
+          container_name: fcg-functions
+          environment:
+            AzureWebJobsStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+            FUNCTIONS_WORKER_RUNTIME: dotnet-isolated
+            RabbitMQ: "amqp://${rabbitmq_user}:${rabbitmq_password}@rabbitmq:5672"
+          depends_on:
+            rabbitmq:
+              condition: service_healthy
+          networks:
+            - fcg-network
+
+      volumes:
+        postgres-data:
+        mongo-data:
+        es-data:
+        rabbitmq-data:
+
+      networks:
+        fcg-network:
+          driver: bridge
+
+runcmd:
+  - curl -fsSL https://get.docker.com | sh
+  - usermod -aG docker ${admin_username}
+  - sysctl -w vm.max_map_count=262144
+  - echo "vm.max_map_count=262144" >> /etc/sysctl.conf
+  - echo '${ghcr_token}' | docker login ghcr.io -u ${ghcr_username} --password-stdin
+  - cd /home/${admin_username}/app && docker compose up -d

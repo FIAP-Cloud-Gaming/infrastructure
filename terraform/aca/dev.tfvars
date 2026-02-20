@@ -1,0 +1,5 @@
+project_name  = "fcg"
+location      = "brazilsouth"
+environment   = "dev"
+ghcr_username = "fiap-cloud-gaming"
+image_tag     = "1.0.0"
