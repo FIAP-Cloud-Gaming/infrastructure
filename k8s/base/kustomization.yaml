@@ -6,8 +6,7 @@ namespace: fcg
 resources:
   - namespace.yaml
 
-  # Secrets
-  - secrets/ghcr-secret.yaml
+  # Secrets (ghcr-secret is created by the workflow, not by kustomize)
   - secrets/app-secrets.yaml
 
   # Infrastructure
