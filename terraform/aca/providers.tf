@@ -5,7 +5,7 @@ terraform {
     resource_group_name  = "fcg-terraform-state-rg"
     storage_account_name = "fcg-terraform-state"
     container_name       = "terraform-state"
-    key                  = "aca.terraform.tfstate"
+    key                  = "aca.terraform.terraform-state"
   }
 
   required_providers {

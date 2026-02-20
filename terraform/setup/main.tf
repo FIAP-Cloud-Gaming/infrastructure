@@ -14,7 +14,7 @@ provider "azurerm" {
   subscription_id = var.subscription_id
 }
 
-resource "azurerm_resource_group" "tfstate" {
+resource "azurerm_resource_group" "terraform-state" {
   name     = "fcg-terraform-state-rg"
   location = var.location
 
@@ -24,10 +24,10 @@ resource "azurerm_resource_group" "tfstate" {
   }
 }
 
-resource "azurerm_storage_account" "tfstate" {
+resource "azurerm_storage_account" "terraform-state" {
   name                     = "fcg-terraform-state"
-  resource_group_name      = azurerm_resource_group.tfstate.name
-  location                 = azurerm_resource_group.tfstate.location
+  resource_group_name      = azurerm_resource_group.terraform-state.name
+  location                 = azurerm_resource_group.terraform-state.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   min_tls_version          = "TLS1_2"
@@ -37,8 +37,8 @@ resource "azurerm_storage_account" "tfstate" {
   }
 }
 
-resource "azurerm_storage_container" "tfstate" {
+resource "azurerm_storage_container" "terraform-state" {
   name                  = "terraform-state"
-  storage_account_id    = azurerm_storage_account.tfstate.id
+  storage_account_id    = azurerm_storage_account.terraform-state.id
   container_access_type = "private"
 }

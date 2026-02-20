@@ -1,7 +1,7 @@
 # Terraform
 .terraform/
-*.tfstate
-*.tfstate.backup
+*.terraform-state
+*.terraform-state.backup
 *.tfplan
 .terraform.lock.hcl
 

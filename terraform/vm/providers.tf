@@ -2,10 +2,10 @@ terraform {
   required_version = ">= 1.14.0"
 
   backend "azurerm" {
-    resource_group_name  = "fcg-tfstate-rg"
-    storage_account_name = "fcgtfstate"
-    container_name       = "tfstate"
-    key                  = "vm.terraform.tfstate"
+    resource_group_name  = "fcg-terraform-state-rg"
+    storage_account_name = "fcg-terraform-state"
+    container_name       = "terraform-state"
+    key                  = "vm.terraform.terraform-state"
   }
 
   required_providers {
