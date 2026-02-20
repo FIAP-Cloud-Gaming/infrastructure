@@ -10,6 +10,7 @@ on:
         options:
           - aca
           - vm
+          - aks
       action:
         description: "Terraform action"
         required: true
@@ -33,7 +34,7 @@ env:
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
 
 jobs:
-  deploy:
+  terraform:
     name: terraform ${{ inputs.action }} (${{ inputs.target }})
     runs-on: ubuntu-latest
     defaults:
@@ -51,3 +52,53 @@ jobs:
             -var-file="dev.tfvars" \
             -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}" \
             -var="ghcr_token=${{ secrets.GHCR_TOKEN }}"
+
+  apply-k8s:
+    name: apply kubernetes manifests
+    needs: terraform
+    if: ${{ inputs.target == 'aks' && inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: azure login
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
+
+      - name: get aks credentials
+        run: az aks get-credentials --resource-group fcg-dev-rg --name fcg-aks --overwrite-existing
+
+      - name: install nginx ingress controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/cloud/deploy.yaml
+          kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+
+      - name: create ghcr secret
+        run: |
+          kubectl create namespace fcg --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret docker-registry ghcr-secret \
+            --namespace=fcg \
+            --docker-server=ghcr.io \
+            --docker-username=fiap-cloud-gaming \
+            --docker-password=${{ secrets.GHCR_TOKEN }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: apply kustomize manifests
+        run: kubectl apply -k k8s/overlays/dev/
+
+      - name: wait for deployments
+        run: |
+          kubectl rollout status deployment/postgres -n fcg --timeout=120s
+          kubectl rollout status deployment/rabbitmq -n fcg --timeout=120s
+          kubectl rollout status deployment/identity-api -n fcg --timeout=180s
+          kubectl rollout status deployment/catalog-api -n fcg --timeout=180s
+          kubectl rollout status deployment/payment-api -n fcg --timeout=180s
+          kubectl rollout status deployment/gateway-api -n fcg --timeout=180s
+
+      - name: show ingress ip
+        run: |
+          echo "Waiting for Ingress external IP..."
+          kubectl get ingress fcg-ingress -n fcg
+          kubectl get svc -n ingress-nginx ingress-nginx-controller

@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fcg
+
+resources:
+  - namespace.yaml
+
+  # Secrets
+  - secrets/ghcr-secret.yaml
+  - secrets/app-secrets.yaml
+
+  # Infrastructure
+  - infra/postgres.yaml
+  - infra/mongo.yaml
+  - infra/redis.yaml
+  - infra/elasticsearch.yaml
+  - infra/rabbitmq.yaml
+  - infra/azurite.yaml
+
+  # Apps
+  - apps/configmap.yaml
+  - apps/identity.yaml
+  - apps/catalog.yaml
+  - apps/payment.yaml
+  - apps/gateway.yaml
+  - apps/functions.yaml
+
+  # Observability
+  - observability/jaeger.yaml
+  - observability/loki.yaml
+  - observability/grafana.yaml
+  - observability/prometheus.yaml
+
+  # HPA (Auto Scaling)
+  - hpa/identity-hpa.yaml
+  - hpa/catalog-hpa.yaml
+  - hpa/payment-hpa.yaml
+
+  # Ingress
+  - ingress/ingress.yaml

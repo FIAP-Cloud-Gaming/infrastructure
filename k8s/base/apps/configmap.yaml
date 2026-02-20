@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: fcg
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Loki__Uri: "http://loki:3100"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+  JwtSettings__Issuer: "fcg-identity-api"
+  JwtSettings__Audience: "fcg-services"
+  JwtSettings__AccessTokenExpirationMinutes: "60"
+  ConnectionStrings__MongoDB: "mongodb://mongo:27017"
+  ConnectionStrings__Redis: "redis:6379"
+  ConnectionStrings__Elasticsearch: "http://elasticsearch:9200"
+  Elasticsearch__Uri: "http://elasticsearch:9200"
+  MongoDB__DatabaseName: "CatalogDB"

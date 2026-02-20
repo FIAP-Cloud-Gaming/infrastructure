@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-api
+  namespace: fcg
+  labels:
+    app: gateway-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-api
+  template:
+    metadata:
+      labels:
+        app: gateway-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: gateway-api
+          image: ghcr.io/fiap-cloud-gaming/gateway-api:1.0.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: JwtSettings__Secret
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+            - name: ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address
+              value: "http://identity-api"
+            - name: ReverseProxy__Clusters__catalog-cluster__Destinations__catalog-api__Address
+              value: "http://catalog-api"
+            - name: ReverseProxy__Clusters__payment-cluster__Destinations__payment-api__Address
+              value: "http://payment-api"
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-api
+  namespace: fcg
+spec:
+  selector:
+    app: gateway-api
+  ports:
+    - port: 80
+      targetPort: 8080
