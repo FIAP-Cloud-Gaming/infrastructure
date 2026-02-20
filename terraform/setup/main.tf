@@ -25,7 +25,7 @@ resource "azurerm_resource_group" "terraform-state" {
 }
 
 resource "azurerm_storage_account" "terraform-state" {
-  name                     = "fcg-terraform-state"
+  name                     = "fcgterraformstate"
   resource_group_name      = azurerm_resource_group.terraform-state.name
   location                 = azurerm_resource_group.terraform-state.location
   account_tier             = "Standard"
