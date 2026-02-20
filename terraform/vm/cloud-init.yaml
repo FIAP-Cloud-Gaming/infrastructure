@@ -19,6 +19,9 @@ write_files:
         postgres:
           image: postgres:18.1-alpine
           container_name: fcg-postgres
+          command: >
+            sh -c "echo 'CREATE DATABASE identity_db; CREATE DATABASE catalog_db; CREATE DATABASE payment_db;'
+            > /docker-entrypoint-initdb.d/create-dbs.sql && exec docker-entrypoint.sh postgres"
           environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: "${postgres_password}"

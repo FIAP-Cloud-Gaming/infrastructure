@@ -14,6 +14,11 @@ resource "azurerm_container_app" "postgres" {
       cpu    = 0.5
       memory = "1Gi"
 
+      command = [
+        "/bin/sh", "-c",
+        "echo 'CREATE DATABASE identity_db; CREATE DATABASE catalog_db; CREATE DATABASE payment_db;' > /docker-entrypoint-initdb.d/create-dbs.sql && exec docker-entrypoint.sh postgres"
+      ]
+
       env {
         name  = "POSTGRES_USER"
         value = "postgres"
