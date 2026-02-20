@@ -127,7 +127,7 @@ terraform apply -var-file="dev.tfvars" \
   -var="ghcr_token=<PAT>"
 
 # Etapa 2: Obter credenciais do cluster
-az aks get-credentials --resource-group fcg-dev-rg --name fcg-aks
+az aks get-credentials --resource-group rg-fcg-dev --name fcg-aks
 
 # Etapa 3: Instalar NGINX Ingress Controller
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.0/deploy/static/provider/cloud/deploy.yaml

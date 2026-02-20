@@ -68,7 +68,7 @@ jobs:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
       - name: get aks credentials
-        run: az aks get-credentials --resource-group fcg-dev-rg --name fcg-aks --overwrite-existing
+        run: az aks get-credentials --resource-group rg-fcg-dev --name fcg-aks --overwrite-existing
 
       - name: install nginx ingress controller
         run: |
