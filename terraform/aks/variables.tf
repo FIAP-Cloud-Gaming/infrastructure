@@ -42,7 +42,7 @@ variable "node_max_count" {
 variable "node_size" {
   description = "tamanho da VM dos nodes"
   type        = string
-  default     = "Standard_B4ms"
+  default     = "Standard_D2s_v3"
 }
 
 variable "kubernetes_version" {
