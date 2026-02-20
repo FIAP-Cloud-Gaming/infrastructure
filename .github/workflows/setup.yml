@@ -57,13 +57,13 @@ jobs:
           fi
 
       - uses: actions/checkout@v6
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
 
       - uses: hashicorp/setup-terraform@v3
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
 
       - name: download current state
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: terraform-setup-state
@@ -71,19 +71,19 @@ jobs:
         continue-on-error: true
 
       - name: terraform init
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
         run: terraform init
 
       - name: terraform apply
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
         run: terraform apply -auto-approve -input=false -var="subscription_id=${{ secrets.ARM_SUBSCRIPTION_ID }}"
 
       - name: show outputs
-        if: steps.check.outputs.skip != "true"
+        if: ${{ steps.check.outputs.skip != 'true' }}
         run: terraform output
 
       - name: upload current state
-        if: always() && steps.check.outputs.skip != "true"
+        if: ${{ always() && steps.check.outputs.skip != 'true' }}
         uses: actions/upload-artifact@v6
         with:
           name: terraform-setup-state
