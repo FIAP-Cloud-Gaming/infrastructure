@@ -1,5 +1,5 @@
 locals {
-  environment_id   = module.aca.environment_id
+  environment_id   = module.aca_env.environment_id
   resource_group   = module.resource_group.name
   ghcr_secret_name = "ghcr-token"
 
