@@ -48,7 +48,7 @@ variable "node_size" {
 variable "kubernetes_version" {
   description = "versao do kubernetes"
   type        = string
-  default     = "1.31"
+  default     = "1.33"
 }
 
 variable "ghcr_token" {
