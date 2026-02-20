@@ -23,12 +23,6 @@ spec:
           ports:
             - containerPort: 80
           env:
-            - name: AzureWebJobsStorage
-              value: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1"
-            - name: FUNCTIONS_WORKER_RUNTIME
-              value: "dotnet-isolated"
-            - name: RabbitMQConnection
-              value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672"
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:
@@ -39,6 +33,12 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: RABBITMQ_PASSWORD
+            - name: AzureWebJobsStorage
+              value: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1"
+            - name: FUNCTIONS_WORKER_RUNTIME
+              value: "dotnet-isolated"
+            - name: RabbitMQConnection
+              value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672"
           resources:
             requests:
               cpu: 100m

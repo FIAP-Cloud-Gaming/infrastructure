@@ -26,15 +26,6 @@ spec:
             - configMapRef:
                 name: app-config
           env:
-            - name: ConnectionStrings__IdentityDb
-              value: "Host=postgres;Port=5432;Database=identity_db;Username=postgres;Password=$(POSTGRES_PASSWORD)"
-            - name: ConnectionStrings__RabbitMQ
-              value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672"
-            - name: JwtSettings__Secret
-              valueFrom:
-                secretKeyRef:
-                  name: app-secrets
-                  key: JWT_SECRET
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -50,6 +41,15 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: RABBITMQ_PASSWORD
+            - name: JwtSettings__Secret
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+            - name: ConnectionStrings__IdentityDb
+              value: "Host=postgres;Port=5432;Database=identity_db;Username=postgres;Password=$(POSTGRES_PASSWORD)"
+            - name: ConnectionStrings__RabbitMQ
+              value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672"
           livenessProbe:
             httpGet:
               path: /alive
