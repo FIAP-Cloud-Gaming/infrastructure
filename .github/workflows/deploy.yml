@@ -90,12 +90,14 @@ jobs:
 
       - name: wait for deployments
         run: |
-          kubectl rollout status deployment/postgres -n fcg --timeout=120s
-          kubectl rollout status deployment/rabbitmq -n fcg --timeout=120s
-          kubectl rollout status deployment/identity-api -n fcg --timeout=180s
-          kubectl rollout status deployment/catalog-api -n fcg --timeout=180s
-          kubectl rollout status deployment/payment-api -n fcg --timeout=180s
-          kubectl rollout status deployment/gateway-api -n fcg --timeout=180s
+          kubectl rollout status deployment/postgres -n fcg --timeout=300s
+          kubectl rollout status deployment/mongo -n fcg --timeout=300s
+          kubectl rollout status deployment/rabbitmq -n fcg --timeout=300s
+          kubectl rollout status deployment/elasticsearch -n fcg --timeout=300s
+          kubectl rollout status deployment/identity-api -n fcg --timeout=300s
+          kubectl rollout status deployment/catalog-api -n fcg --timeout=300s
+          kubectl rollout status deployment/payment-api -n fcg --timeout=300s
+          kubectl rollout status deployment/gateway-api -n fcg --timeout=300s
 
       - name: show ingress ip
         run: |
