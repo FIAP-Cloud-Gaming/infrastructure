@@ -47,6 +47,7 @@ jobs:
 
       - name: check if state storage exists
         id: check
+        working-directory: .
         run: |
           EXISTS=$(az storage account check-name --name fcgtfstate --query "nameAvailable" -o tsv)
           if [ "$EXISTS" = "false" ]; then
