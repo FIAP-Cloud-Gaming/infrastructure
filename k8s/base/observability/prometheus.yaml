@@ -95,12 +95,14 @@ spec:
           args:
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.retention.time=7d"
+            - "--web.external-url=/prometheus"
+            - "--web.route-prefix=/prometheus"
           volumeMounts:
             - name: config
               mountPath: /etc/prometheus
           readinessProbe:
             httpGet:
-              path: /-/ready
+              path: /prometheus/-/ready
               port: 9090
             initialDelaySeconds: 10
             periodSeconds: 10
