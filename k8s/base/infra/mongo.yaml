@@ -39,6 +39,7 @@ spec:
               command: ["mongosh", "--eval", "db.adminCommand('ping')"]
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 250m
