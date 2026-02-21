@@ -85,7 +85,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "count_over_time({container=\"fcg-payment-api\"} |~ \"(?i)payment.*created\" | json | __error__=\"\" [$__range])",
+          "expr": "count_over_time({service_name=\"payment-api\"} |~ \"(?i)payment.*created\" | __error__=\"\" [$__range])",
           "queryType": "range",
           "refId": "A"
         }
@@ -153,7 +153,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "count_over_time({container=\"fcg-payment-api\"} |~ \"(?i)succeeded\" | json | __error__=\"\" [$__range])",
+          "expr": "count_over_time({service_name=\"payment-api\"} |~ \"(?i)succeeded\" | __error__=\"\" [$__range])",
           "queryType": "range",
           "refId": "A"
         }
@@ -225,7 +225,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "count_over_time({container=\"fcg-payment-api\"} | json | level=~\"Error|Fatal\" | __error__=\"\" [$__range])",
+          "expr": "count_over_time({service_name=\"payment-api\"} | json | level=~\"Error|Fatal\" | __error__=\"\" [$__range])",
           "queryType": "range",
           "refId": "A"
         }
@@ -291,7 +291,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "sum by (level) (count_over_time({container=\"fcg-payment-api\"} | json | __error__=\"\" [$__interval]))",
+          "expr": "sum by (level) (count_over_time({service_name=\"payment-api\"} | json | __error__=\"\" [$__interval]))",
           "queryType": "range",
           "refId": "A"
         }
@@ -418,7 +418,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"fcg-payment-api\"} |~ \"(?i)payment.*created\" | json | __error__=\"\" [$__interval]))",
+          "expr": "sum(count_over_time({service_name=\"payment-api\"} |~ \"(?i)payment.*created\" | __error__=\"\" [$__interval]))",
           "legendFormat": "Creates",
           "queryType": "range",
           "refId": "A"
@@ -430,7 +430,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=\"fcg-payment-api\"} |~ \"(?i)succeeded\" | json | __error__=\"\" [$__interval]))",
+          "expr": "sum(count_over_time({service_name=\"payment-api\"} |~ \"(?i)succeeded\" | __error__=\"\" [$__interval]))",
           "hide": false,
           "legendFormat": "Succeeded",
           "queryType": "range",
@@ -477,7 +477,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"fcg-payment-api\"} | json",
+          "expr": "{service_name=\"payment-api\"} | json",
           "queryType": "range",
           "refId": "A"
         }
@@ -617,7 +617,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "sum by (level) (count_over_time({container=\"fcg-payment-api\"} | json | __error__=\"\" [$__interval]))",
+          "expr": "sum by (level) (count_over_time({service_name=\"payment-api\"} | json | __error__=\"\" [$__interval]))",
           "queryType": "range",
           "refId": "A"
         }
@@ -662,7 +662,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"fcg-payment-api\"} | json | level=~\"Error|Fatal\"",
+          "expr": "{service_name=\"payment-api\"} | json | level=~\"Error|Fatal\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -707,7 +707,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"fcg-payment-api\"} |~ \"(?i)(create|process|succeed|fail)\" | json",
+          "expr": "{service_name=\"payment-api\"} |~ \"(?i)(create|process|succeed|fail)\" | json",
           "queryType": "range",
           "refId": "A"
         }
@@ -752,7 +752,7 @@
           },
           "direction": "backward",
           "editorMode": "code",
-          "expr": "{container=\"fcg-payment-api\"} |~ \"(?i)(cancel|refund)\" | json",
+          "expr": "{service_name=\"payment-api\"} |~ \"(?i)(cancel|refund)\" | json",
           "queryType": "range",
           "refId": "A"
         }

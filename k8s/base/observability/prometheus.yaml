@@ -10,6 +10,36 @@ data:
       evaluation_interval: 15s
 
     scrape_configs:
+      - job_name: "prometheus"
+        metrics_path: /prometheus/metrics
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: "kubernetes-nodes"
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      - job_name: "kubernetes-cadvisor"
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        metrics_path: /metrics/cadvisor
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
       - job_name: "kubernetes-pods"
         kubernetes_sd_configs:
           - role: pod
@@ -31,13 +61,6 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: replace
             target_label: app
-
-      - job_name: "kubernetes-nodes"
-        kubernetes_sd_configs:
-          - role: node
-        relabel_configs:
-          - action: labelmap
-            regex: __meta_kubernetes_node_label_(.+)
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -51,7 +74,7 @@ metadata:
   name: prometheus
 rules:
   - apiGroups: [""]
-    resources: ["pods", "nodes", "nodes/metrics", "services", "endpoints"]
+    resources: ["pods", "nodes", "nodes/metrics", "nodes/proxy", "services", "endpoints"]
     verbs: ["get", "list", "watch"]
   - nonResourceURLs: ["/metrics"]
     verbs: ["get"]

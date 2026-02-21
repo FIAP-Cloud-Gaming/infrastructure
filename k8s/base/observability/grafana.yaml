@@ -35,6 +35,8 @@ spec:
               value: "http://loki:3100"
             - name: JAEGER_URL
               value: "http://jaeger:16686"
+            - name: PROMETHEUS_URL
+              value: "http://prometheus:9090"
           readinessProbe:
             httpGet:
               path: /grafana/api/health
